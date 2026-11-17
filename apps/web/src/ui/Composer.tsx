@@ -602,6 +602,8 @@ function ComposerComponent(props: {
   isolate: boolean
   /** Why this project cannot start an isolated chat; the option is disabled with it. */
   isolateUnavailable?: string | undefined
+  /** Makes the project a Git repository; offered while isolation is unavailable. */
+  onSetUpGit?: (() => void) | undefined
   designMode: boolean
   /** Why Ask first cannot run with this provider; the option is disabled with it. */
   askFirstUnavailable?: string | undefined
@@ -2178,6 +2180,17 @@ function ComposerComponent(props: {
                           close()
                         }}
                       />
+                      {props.isolateUnavailable !== undefined && props.onSetUpGit ? (
+                        <MenuItem
+                          title="Set up Git"
+                          icon={<GitBranch size={14} aria-hidden />}
+                          detail="Saves a starting point so chats can be isolated"
+                          onClick={() => {
+                            props.onSetUpGit?.()
+                            close()
+                          }}
+                        />
+                      ) : null}
                     </>
                   )}
                 </Menu>

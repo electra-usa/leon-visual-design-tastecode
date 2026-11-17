@@ -55,7 +55,7 @@ import { imageFileName, materializeAttachment, readAttachmentImage } from './upl
 import type { UsageHistoryService } from './usage-history.js'
 import { usageSummaryWithLimits } from './usage-summary.js'
 import { listWorkspaceBranches, readWorkspace } from './workspace.js'
-import { commitCheckout, pushCheckout } from './workspace-git.js'
+import { commitCheckout, initCheckout, pushCheckout } from './workspace-git.js'
 import {
   listWorkspaceDirectory,
   readWorkspaceTextFile,
@@ -1239,6 +1239,13 @@ export function startServer(
       case 'workspace.info': {
         const p = parseParams(method, params)
         return readWorkspace(resolveWorkspacePath(p.path))
+      }
+
+      case 'workspace.initGit': {
+        const p = parseParams(method, params)
+        const folder = resolveWorkspacePath(p.path)
+        await initCheckout(folder)
+        return readWorkspace(folder)
       }
 
       case 'workspace.branches': {

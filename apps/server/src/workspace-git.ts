@@ -1,3 +1,5 @@
+import { stat, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { captureCli, spawnCli } from '@harness/proc/cli'
 import { ownershipRefusal } from './git-ownership.js'
 
@@ -158,6 +160,70 @@ export async function pushCheckout(
     throw gitError(pushed, 'Git could not push the branch.')
   }
   return { branch, remote }
+}
+
+/** Written only when the folder has no `.gitignore`, so the first commit skips the usual bulk and secrets. */
+const STARTER_GITIGNORE = [
+  'node_modules/',
+  '.env',
+  '.env.*',
+  '!.env.example',
+  '.DS_Store',
+  'Thumbs.db',
+  '',
+].join('\n')
+
+/**
+ * Turn a plain folder into a Git repository with one "Starting point" commit.
+ *
+ * Isolated chats copy a commit, so a folder needs Git and at least one commit
+ * before it can start one. Refuses a folder that is already inside a
+ * repository rather than nesting a second one. The commit is allowed to be
+ * empty so an empty folder still gets its starting point.
+ */
+export async function initCheckout(
+  cwd: string,
+  git: GitCommand = runGitCommand,
+  files: {
+    exists: (file: string) => Promise<boolean>
+    write: (file: string, text: string) => Promise<void>
+  } = nodeFiles,
+): Promise<void> {
+  const inside = await git(cwd, ['rev-parse', '--is-inside-work-tree'])
+  if (inside.code === 0 && inside.stdout.trim() === 'true')
+    throw new Error('This folder already uses Git.')
+  const ownership = ownershipRefusal(cwd, inside.stderr)
+  if (ownership) throw ownership
+
+  const initialized = await git(cwd, ['init', '--quiet', '--initial-branch=main'])
+  if (initialized.code !== 0) throw gitError(initialized, 'Git could not set up this folder.')
+
+  const ignore = path.join(cwd, '.gitignore')
+  if (!(await files.exists(ignore))) await files.write(ignore, STARTER_GITIGNORE)
+
+  const staged = await git(cwd, ['add', '--all'], { timeoutMs: WRITE_TIMEOUT_MS })
+  if (staged.code !== 0) throw gitError(staged, 'Git could not stage the files.')
+
+  const committed = await git(cwd, ['commit', '--quiet', '--allow-empty', '--file=-'], {
+    stdin: 'Starting point',
+    timeoutMs: WRITE_TIMEOUT_MS,
+  })
+  if (committed.code !== 0) {
+    if (/user\.(?:name|email)|tell me who you are/i.test(output(committed)))
+      throw new Error(
+        'Git needs your name and email before it can save. Set them in Git, then try again.',
+      )
+    throw gitError(committed, 'Git set up the folder but could not save the starting point.')
+  }
+}
+
+const nodeFiles = {
+  exists: async (file: string) =>
+    stat(file).then(
+      () => true,
+      () => false,
+    ),
+  write: (file: string, text: string) => writeFile(file, text, { flag: 'wx' }),
 }
 
 /** Git refuses another user's repository with the same exit as a folder that is none. */

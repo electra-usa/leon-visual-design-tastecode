@@ -1608,6 +1608,19 @@ export const methods = {
       dirtyFiles: z.number(),
     }),
   },
+  /**
+   * Make a plain project folder a Git repository with one "Starting point"
+   * commit, so it can start isolated chats. Refuses a folder already in Git.
+   */
+  'workspace.initGit': {
+    params: z.object({ path: z.string().min(1) }),
+    result: z.object({
+      branch: z.string().optional(),
+      added: z.number(),
+      removed: z.number(),
+      dirtyFiles: z.number(),
+    }),
+  },
   'workspace.branches': {
     params: z.object({ path: z.string() }),
     result: z.object({ branches: z.array(z.string()) }),

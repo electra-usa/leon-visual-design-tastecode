@@ -7734,6 +7734,20 @@ export function App({ transport: givenTransport }: { transport?: Transport } = {
   // from. Until it answers for the project on screen, Isolated stays offered.
   const newChatUnbranched =
     !activeId && activePath !== undefined && unbranchedProjects.current.has(activePath)
+  const setUpGit = (projectPath: string) => {
+    setNotice(undefined)
+    setActionError(undefined)
+    void transport
+      .request('workspace.initGit', { path: projectPath })
+      .then((info) => {
+        recordCheckout(projectPath, info)
+        if (activePathRef.current === projectPath) setWorkspace(info)
+        setNotice('Git is set up for this project. Chats here can now run isolated.')
+      })
+      .catch((error: unknown) =>
+        reportError(error instanceof Error ? error.message : String(error)),
+      )
+  }
   const composerProps: ComposerProps = {
     transport: transport,
     provider: provider,
@@ -7783,7 +7797,12 @@ export function App({ transport: givenTransport }: { transport?: Transport } = {
       : (isolateSession ||
           (!activeId && activePath !== undefined && sharedCheckoutBusy(projects, activePath))) &&
         !newChatUnbranched,
-    ...(newChatUnbranched ? { isolateUnavailable: 'Isolated needs a Git repository' } : {}),
+    ...(newChatUnbranched && activePath !== undefined
+      ? {
+          isolateUnavailable: 'Isolated needs a Git repository',
+          onSetUpGit: () => setUpGit(activePath),
+        }
+      : {}),
     designMode: designMode,
     ...(askFirstUnsupported
       ? {
