@@ -4480,7 +4480,13 @@ export function App({ transport: givenTransport }: { transport?: Transport } = {
         // every time ran git before the agent started, and waiting here for a
         // branch list held the chat for seconds on a busy machine.
         // A folder that is not a Git repository has nothing to isolate from: it starts Local.
-        const isolate = isolateSession && !unbranchedProjects.current.has(projectPath)
+        // Auto-isolate: another chat is mid-turn in this project's shared checkout,
+        // so this chat gets its own checkout instead of editing the same files.
+        const autoIsolate = sharedCheckoutBusy(projectsRef.current, projectPath)
+        const isolate =
+          (isolateSession || autoIsolate) && !unbranchedProjects.current.has(projectPath)
+        if (isolate && autoIsolate && !isolateSession)
+          setNotice('Another chat is working in this project, so this chat started isolated.')
         const shown = newChatBranch(projectPath, isolate)
         const branch =
           shown !== undefined && shown !== checkedOutBranches.current.get(projectPath)
@@ -7772,7 +7778,11 @@ export function App({ transport: givenTransport }: { transport?: Transport } = {
     ),
     running: visibleRunning,
     newSession: !activeId,
-    isolate: active?.session.worktreeBranch ? true : isolateSession && !newChatUnbranched,
+    isolate: active?.session.worktreeBranch
+      ? true
+      : (isolateSession ||
+          (!activeId && activePath !== undefined && sharedCheckoutBusy(projects, activePath))) &&
+        !newChatUnbranched,
     ...(newChatUnbranched ? { isolateUnavailable: 'Isolated needs a Git repository' } : {}),
     designMode: designMode,
     ...(askFirstUnsupported
@@ -8639,6 +8649,15 @@ function statusFor(
 }
 
 /** The chat runs a turn, starts one, or its turn waits on the user. */
+/** True when a chat without its own checkout is mid-turn in this project folder. */
+function sharedCheckoutBusy(projects: readonly Project[], projectPath: string): boolean {
+  const project = projects.find((candidate) => candidate.path === projectPath)
+  return (
+    project?.sessions.some((session) => !session.worktreeBranch && runsTurn(session.status)) ??
+    false
+  )
+}
+
 function runsTurn(status: Project['sessions'][number]['status'] | undefined): boolean {
   return (
     status === 'starting' || status === 'working' || status === 'approval' || status === 'input'
