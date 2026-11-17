@@ -8,6 +8,7 @@ import {
   IconGitBranch as GitBranch,
   IconGitPullRequest as GitPullRequest,
   IconHistory as History,
+  IconHelpCircle as HelpCircle,
   IconKeyboard as Keyboard,
   IconLayoutSidebar as PanelLeft,
   IconLayoutBottombar as PanelBottom,
@@ -139,6 +140,8 @@ function StageHeaderComponent(props: {
   keybindings?: Keybindings | undefined
   menuActions: StageHeaderMenuActions
   onOpenRollback: () => void
+  /** Reopens the hideable getting-started guide. */
+  onShowGuide?: (() => void) | undefined
   onRenameSession: (id: string, title: string) => void
   onToggleSessionPin: (id: string) => void
   onArchiveSession: (id: string) => void
@@ -307,6 +310,13 @@ function StageHeaderComponent(props: {
                 icon={<Keyboard size={14} aria-hidden />}
                 onClick={() => closeThenRun(close, props.menuActions.keybindings)}
               />
+              {props.onShowGuide ? (
+                <MenuItem
+                  title="Getting started guide"
+                  icon={<HelpCircle size={14} aria-hidden />}
+                  onClick={() => closeThenRun(close, props.onShowGuide!)}
+                />
+              ) : null}
 
               {props.sessionId ? (
                 <>
