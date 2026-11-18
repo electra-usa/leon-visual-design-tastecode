@@ -76,7 +76,7 @@ export function GettingStarted(props: { onHide: () => void }) {
           type="button"
           className="getting-started__hide"
           aria-label="Hide guide"
-          title="Hide guide (reopen from ⋯ > Getting started guide)"
+          title="Hide guide until next launch (or reopen from ⋯ > Getting started guide)"
           onClick={props.onHide}
         >
           <X size={14} aria-hidden />

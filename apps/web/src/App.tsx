@@ -1293,15 +1293,10 @@ export function App({ transport: givenTransport }: { transport?: Transport } = {
   }, [rollbackOpen])
   const [undoRestore, setUndoRestore] = useState<{ threadId: string; token: string } | undefined>()
   const [isolateSession, setIsolateSession] = useState(false)
-  const [guideOpen, setGuideOpen] = useState(() => readSetting(GUIDE_HIDDEN_KEY) !== '1')
-  const hideGuide = useCallback(() => {
-    setGuideOpen(false)
-    writeSetting(GUIDE_HIDDEN_KEY, '1')
-  }, [])
-  const showGuide = useCallback(() => {
-    setGuideOpen(true)
-    removeSetting(GUIDE_HIDDEN_KEY)
-  }, [])
+  // The guide opens on every launch; hiding it lasts until the app restarts.
+  const [guideOpen, setGuideOpen] = useState(true)
+  const hideGuide = useCallback(() => setGuideOpen(false), [])
+  const showGuide = useCallback(() => setGuideOpen(true), [])
   const [designModes, setDesignModes] = useState<Record<string, boolean>>({})
   const designMode = useMemo(
     () =>
@@ -9158,9 +9153,6 @@ function writeSetting(key: string, value: string): void {
 }
 
 /** What each provider's last voice.status said, so the composer can show it before the next read answers. */
-/** Set once the user hides the getting-started guide; cleared when they reopen it. */
-const GUIDE_HIDDEN_KEY = 'electra.gettingStartedHidden'
-
 const VOICE_AVAILABLE_KEY = 'harness.voiceAvailable'
 
 function rememberedVoice(provider: ProviderId): boolean | undefined {

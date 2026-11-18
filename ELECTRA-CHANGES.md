@@ -29,11 +29,10 @@ in by merging his branch into this one.
 
 - **What:** a small panel in the bottom-right corner that walks through the first steps
   (sign in, open a project folder, set up Git, pick a model, Local vs Isolated, Design mode,
-  review, undo). Shows on first launch; × hides it; **⋯ > Getting started guide** brings it
-  back.
+  review, undo). Opens every time the app starts (Electra's choice); × hides it until the next
+  launch; **⋯ > Getting started guide** brings it back sooner.
 - **Where:** `apps/web/src/ui/GettingStarted.tsx`, `apps/web/src/styles/getting-started.css`,
-  wiring in `App.tsx` and `ui/StageHeader.tsx`. The hidden choice is stored in the app's local
-  storage (`electra.gettingStartedHidden`).
+  wiring in `App.tsx` and `ui/StageHeader.tsx`. Nothing is saved about hiding it.
 
 ## Building and installing
 
